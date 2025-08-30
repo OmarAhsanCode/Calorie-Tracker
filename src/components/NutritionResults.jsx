@@ -6,13 +6,27 @@ const NutritionResults = ({ data, onAnalyzeAnother }) => {
     return (
       <div className="mt-8 bg-white rounded-xl shadow-lg p-6 sm:p-8 animate-fadeIn">
         <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833-.228 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Analysis Failed</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Oops! Only Food Items Allowed</h3>
           <p className="text-gray-600 mb-6">{data.message}</p>
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center justify-center">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Try describing food like this:
+            </h4>
+            <div className="text-sm text-blue-800 space-y-1">
+              <p>• "Grilled chicken breast with brown rice"</p>
+              <p>• "Greek yogurt with berries and granola"</p>
+              <p>• "Salmon fillet with quinoa and vegetables"</p>
+              <p>• "Turkey sandwich with avocado"</p>
+            </div>
+          </div>
           <button 
             className="btn-primary"
             onClick={onAnalyzeAnother}

@@ -10,6 +10,16 @@ function App() {
   const [nutritionData, setNutritionData] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isAnalyzingText, setIsAnalyzingText] = useState(false)
+  const [searchHistory, setSearchHistory] = useState([])
+  const [clearImagePreview, setClearImagePreview] = useState(false)
+
+  // Helper function to add items to search history (keep only last 3)
+  const addToSearchHistory = (searchItem) => {
+    setSearchHistory(prev => {
+      const newHistory = [searchItem, ...prev.filter(item => item.query !== searchItem.query)]
+      return newHistory.slice(0, 3) // Keep only the most recent 3 searches
+    })
+  }
 
   const handleTextAnalysis = async (foodText) => {
     setIsAnalyzingText(true)
@@ -40,10 +50,30 @@ function App() {
       console.log('Raw webhook response:', data)
       
       // Process the webhook response for text input (same format as image)
-      if (data && data.length > 0 && data[0].output && data[0].output.status === 'success') {
+      if (data && data.length > 0 && data[0].output) {
         const output = data[0].output
-        console.log('Processed text output:', output)
-        setNutritionData(output)
+        
+        // Check if the status indicates an error (no food items detected)
+        if (output.status !== 'success' && typeof output.status === 'string') {
+          console.log('No food items detected:', output.status)
+          setNutritionData({
+            error: true,
+            message: "Oops! Only food items allowed. Please describe what you ate, like 'grilled chicken with rice' or 'apple and peanut butter'."
+          })
+        } else if (output.status === 'success') {
+          console.log('Processed text output:', output)
+          setNutritionData(output)
+          
+          // Add to search history
+          addToSearchHistory({
+            type: 'text',
+            query: foodText,
+            timestamp: new Date().toLocaleString(),
+            result: output
+          })
+        } else {
+          throw new Error('Invalid response format from webhook')
+        }
       } else {
         console.log('Invalid text response format:', data)
         throw new Error('Invalid response format from webhook')
@@ -93,6 +123,14 @@ function App() {
         const output = data[0].output
         console.log('Processed output:', output)
         setNutritionData(output)
+        
+        // Add to search history
+        addToSearchHistory({
+          type: 'image',
+          query: imageFile.name || 'Image Upload',
+          timestamp: new Date().toLocaleString(),
+          result: output
+        })
       } else {
         console.log('Invalid response format:', data)
         throw new Error('Invalid response format from webhook')
@@ -109,10 +147,19 @@ function App() {
     }
   }
 
+  // Function to rerun a previous search
+  const handleRerunSearch = (historyItem) => {
+    // Always show the stored result instantly without loading
+    setNutritionData(historyItem.result)
+  }
+
   const handleAnalyzeAnother = () => {
     setNutritionData(null)
     setIsAnalyzing(false)
     setIsAnalyzingText(false)
+    setClearImagePreview(true) // Trigger image preview clearing
+    // Reset the clear flag after a brief moment
+    setTimeout(() => setClearImagePreview(false), 100)
   }
 
   // Test function with mock data to verify display functionality
@@ -161,20 +208,12 @@ function App() {
       <main>
         <Hero />
         <div className="max-w-4xl mx-auto px-4 py-12">
-          {/* Test button - remove in production */}
-          <div className="text-center mb-4">
-            <button 
-              onClick={handleTestWithMockData}
-              className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-            >
-              Test with Mock Data
-            </button>
-          </div>
-          
           <TextInputAnalyzer 
             onTextAnalysis={handleTextAnalysis}
             isAnalyzing={isAnalyzingText}
             onMockData={handleTestWithMockData}
+            searchHistory={searchHistory}
+            onRerunSearch={handleRerunSearch}
           />
           
           <div className="relative mb-6">
@@ -189,6 +228,7 @@ function App() {
           <ImageUploader 
             onImageUpload={handleImageAnalysis}
             isAnalyzing={isAnalyzing}
+            clearPreview={clearImagePreview}
           />
           {nutritionData && (
             <NutritionResults 
