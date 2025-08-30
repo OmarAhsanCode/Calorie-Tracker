@@ -10,7 +10,7 @@ const Hero = () => {
             <span className="block text-accent-500">Analysis</span>
           </h1>
           <p className="text-xl sm:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
-            Upload a photo of your meal and get detailed macronutrient breakdown in seconds. 
+            Describe your meal or upload a photo and get detailed macronutrient breakdown in seconds. 
             Powered by advanced AI technology.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">

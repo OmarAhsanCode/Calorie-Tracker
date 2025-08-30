@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import Header from './components/Header'
 import Hero from './components/Hero'
+import TextInputAnalyzer from './components/TextInputAnalyzer'
 import ImageUploader from './components/ImageUploader'
 import NutritionResults from './components/NutritionResults'
 import Footer from './components/Footer'
@@ -8,6 +9,56 @@ import Footer from './components/Footer'
 function App() {
   const [nutritionData, setNutritionData] = useState(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isAnalyzingText, setIsAnalyzingText] = useState(false)
+
+  const handleTextAnalysis = async (foodText) => {
+    setIsAnalyzingText(true)
+    setNutritionData(null)
+
+    try {
+      console.log('Starting text analysis for:', foodText)
+      
+      // Create FormData for text input
+      const formData = new FormData()
+      formData.append('text', foodText)
+      
+      console.log('Sending text request to webhook...')
+
+      // Send to the same webhook as image analysis
+      const response = await fetch('https://submastery.app.n8n.cloud/webhook-test/Calapp', {
+        method: 'POST',
+        body: formData
+      })
+
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Raw webhook response:', data)
+      
+      // Process the webhook response for text input (same format as image)
+      if (data && data.length > 0 && data[0].output && data[0].output.status === 'success') {
+        const output = data[0].output
+        console.log('Processed text output:', output)
+        setNutritionData(output)
+      } else {
+        console.log('Invalid text response format:', data)
+        throw new Error('Invalid response format from webhook')
+      }
+    } catch (error) {
+      console.error('Error analyzing text:', error)
+      // Set error state or fallback data
+      setNutritionData({
+        error: true,
+        message: `Failed to analyze the food description: ${error.message}. Please try again.`
+      })
+    } finally {
+      setIsAnalyzingText(false)
+    }
+  }
 
   const handleImageAnalysis = async (imageFile) => {
     setIsAnalyzing(true)
@@ -60,6 +111,8 @@ function App() {
 
   const handleAnalyzeAnother = () => {
     setNutritionData(null)
+    setIsAnalyzing(false)
+    setIsAnalyzingText(false)
   }
 
   // Test function with mock data to verify display functionality
@@ -116,6 +169,21 @@ function App() {
             >
               Test with Mock Data
             </button>
+          </div>
+          
+          <TextInputAnalyzer 
+            onTextAnalysis={handleTextAnalysis}
+            isAnalyzing={isAnalyzingText}
+            onMockData={handleTestWithMockData}
+          />
+          
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-gray-50 text-gray-500">OR</span>
+            </div>
           </div>
           
           <ImageUploader 
