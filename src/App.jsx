@@ -1,4 +1,6 @@
 import React, { useState } from 'react'
+import { ThemeProvider } from './contexts/ThemeContext'
+import { AuthProvider } from './contexts/AuthContext'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import TextInputAnalyzer from './components/TextInputAnalyzer'
@@ -19,6 +21,13 @@ function App() {
       const newHistory = [searchItem, ...prev.filter(item => item.query !== searchItem.query)]
       return newHistory.slice(0, 3) // Keep only the most recent 3 searches
     })
+  }
+
+  // Helper function to check if status indicates success
+  const isSuccessStatus = (status) => {
+    return status === 'success' || 
+           status === 'Dish analyzed successfully' || 
+           (typeof status === 'string' && status.toLowerCase().includes('successfully'))
   }
 
   const handleTextAnalysis = async (foodText) => {
@@ -54,13 +63,13 @@ function App() {
         const output = data[0].output
         
         // Check if the status indicates an error (no food items detected)
-        if (output.status !== 'success' && typeof output.status === 'string') {
+        if (!isSuccessStatus(output.status) && typeof output.status === 'string') {
           console.log('No food items detected:', output.status)
           setNutritionData({
             error: true,
             message: "Oops! Only food items allowed. Please describe what you ate, like 'grilled chicken with rice' or 'apple and peanut butter'."
           })
-        } else if (output.status === 'success') {
+        } else if (isSuccessStatus(output.status)) {
           console.log('Processed text output:', output)
           setNutritionData(output)
           
@@ -119,7 +128,7 @@ function App() {
       console.log('Raw webhook response:', data)
       
       // Process the webhook response
-      if (data && data.length > 0 && data[0].output && data[0].output.status === 'success') {
+      if (data && data.length > 0 && data[0].output && isSuccessStatus(data[0].output.status)) {
         const output = data[0].output
         console.log('Processed output:', output)
         setNutritionData(output)
@@ -203,43 +212,47 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-      <Header />
-      <main>
-        <Hero />
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          <TextInputAnalyzer 
-            onTextAnalysis={handleTextAnalysis}
-            isAnalyzing={isAnalyzingText}
-            onMockData={handleTestWithMockData}
-            searchHistory={searchHistory}
-            onRerunSearch={handleRerunSearch}
-          />
-          
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+    <ThemeProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900">
+          <Header />
+          <main>
+            <Hero />
+            <div className="max-w-4xl mx-auto px-4 py-12">
+              <TextInputAnalyzer 
+                onTextAnalysis={handleTextAnalysis}
+                isAnalyzing={isAnalyzingText}
+                onMockData={handleTestWithMockData}
+                searchHistory={searchHistory}
+                onRerunSearch={handleRerunSearch}
+              />
+              
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">OR</span>
+                </div>
+              </div>
+              
+              <ImageUploader 
+                onImageUpload={handleImageAnalysis}
+                isAnalyzing={isAnalyzing}
+                clearPreview={clearImagePreview}
+              />
+              {nutritionData && (
+                <NutritionResults 
+                  data={nutritionData} 
+                  onAnalyzeAnother={handleAnalyzeAnother}
+                />
+              )}
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gray-50 text-gray-500">OR</span>
-            </div>
-          </div>
-          
-          <ImageUploader 
-            onImageUpload={handleImageAnalysis}
-            isAnalyzing={isAnalyzing}
-            clearPreview={clearImagePreview}
-          />
-          {nutritionData && (
-            <NutritionResults 
-              data={nutritionData} 
-              onAnalyzeAnother={handleAnalyzeAnother}
-            />
-          )}
+          </main>
+          <Footer />
         </div>
-      </main>
-      <Footer />
-    </div>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

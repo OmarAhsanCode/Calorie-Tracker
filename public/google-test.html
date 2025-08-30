@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sign-In Test</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <h1>Google Sign-In Test</h1>
+    <p>Testing if Google Sign-In works with your configuration</p>
+    
+    <div id="g_id_onload"
+         data-client_id="557589122244-04d416rp7g2h4mklg5024brorq45mvbb.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="continue_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            alert("Sign-in successful! Check console for details.");
+            
+            // Decode the JWT token
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            console.log("User info:", payload);
+            
+            document.getElementById('result').innerHTML = `
+                <h2>Success!</h2>
+                <p>Welcome, ${payload.name}!</p>
+                <p>Email: ${payload.email}</p>
+                <img src="${payload.picture}" alt="Profile" style="width: 50px; height: 50px; border-radius: 50%;">
+            `;
+        }
+        
+        window.onload = function () {
+            console.log("Google script loaded:", !!window.google);
+            console.log("Current URL:", window.location.href);
+        }
+    </script>
+    
+    <div id="result"></div>
+    
+    <div style="margin-top: 20px;">
+        <h3>Debug Info:</h3>
+        <p>Current URL: <span id="current-url"></span></p>
+        <p>Google Script Loaded: <span id="google-status"></span></p>
+        <p>Client ID: 557589122244-04d416rp7g2h4mklg5024brorq45mvbb.apps.googleusercontent.com</p>
+    </div>
+    
+    <script>
+        document.getElementById('current-url').textContent = window.location.href;
+        
+        setTimeout(() => {
+            document.getElementById('google-status').textContent = !!window.google ? 'Yes' : 'No';
+            if (window.google) {
+                console.log("Google accounts API:", !!window.google.accounts);
+                console.log("Google accounts id:", !!window.google.accounts?.id);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
