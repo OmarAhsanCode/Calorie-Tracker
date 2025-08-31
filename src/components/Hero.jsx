@@ -1,45 +1,60 @@
+// Hero: Establishes brand identity quickly with gradient headline, concise value prop, and trust-building preview card.
 import React from 'react'
+import { motion } from 'framer-motion'
+import HeroPreview from './HeroPreview'
 
 const Hero = () => {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-800 dark:to-primary-900 py-16 sm:py-24">
+    <section className="relative overflow-hidden py-16 sm:py-24 bg-page-bg">
+      {/* Soft gradient aura background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-32 -left-24 w-96 h-96 bg-gradient-to-br from-brand-green/10 to-brand-orange/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 -right-32 w-96 h-96 bg-gradient-to-tr from-brand-orange/10 to-brand-green/10 rounded-full blur-3xl" />
+      </div>
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-            Instant Nutrition
-            <span className="block text-accent-500 dark:text-accent-400">Analysis</span>
-          </h1>
-          <p className="text-xl sm:text-2xl text-blue-100 dark:text-blue-200 mb-8 max-w-3xl mx-auto">
-            Describe your meal or upload a photo and get detailed macronutrient breakdown in seconds. 
-            Powered by advanced AI technology.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <div className="flex items-center text-blue-100 dark:text-blue-200">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Protein • Carbs • Fat
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left: Headline & copy */}
+            <div>
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55 }}
+                className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-brand-green to-brand-orange mb-6"
+              >
+                Instant Nutrition Analysis
+              </motion.h1>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.08 }}
+                className="text-lg sm:text-xl text-gray-600 max-w-xl mb-8"
+              >
+                Type or snap your meal and get a smart macro breakdown in seconds. No manual logging. Just clarity.
+              </motion.p>
+              {/* Credibility badges */}
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
+                className="flex flex-wrap gap-3"
+              >
+                {[
+                  { label: 'Accurate Macros', icon: '✅' },
+                  { label: 'AI Powered', icon: '🤖' },
+                  { label: 'Mobile Friendly', icon: '📱' },
+                  { label: 'Fast Results', icon: '⚡' },
+                ].map(b => (
+                  <span key={b.label} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-sm text-sm font-medium text-gray-700 shadow-sm border border-gray-200">
+                    <span>{b.icon}</span>{b.label}
+                  </span>
+                ))}
+              </motion.div>
             </div>
-            <div className="flex items-center text-blue-100 dark:text-blue-200">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Instant Results
-            </div>
-            <div className="flex items-center text-blue-100 dark:text-blue-200">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Mobile Friendly
-            </div>
+          {/* Right: Preview */}
+          <div className="relative">
+            <HeroPreview />
           </div>
         </div>
-      </div>
-      
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white dark:bg-gray-300 opacity-5 rounded-full"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white dark:bg-gray-300 opacity-5 rounded-full"></div>
       </div>
     </section>
   )

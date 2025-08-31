@@ -10,7 +10,8 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+  /* Legacy primary (kept for backward compatibility) */
+  @apply bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
   }
   
   .btn-secondary {
@@ -18,11 +19,34 @@
   }
 
   .upload-area {
-    @apply border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 rounded-lg p-8 text-center transition-colors duration-200 cursor-pointer;
+  /* Legacy upload area */
+  @apply border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500 rounded-lg p-8 text-center transition-colors duration-200 cursor-pointer;
   }
 
   .upload-area.dragover {
     @apply border-primary-500 dark:border-primary-400 bg-primary-50 dark:bg-gray-800;
+  }
+}
+
+/* New brand-focused component styles */
+@layer components {
+  .btn-brand-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-brand-green text-white font-semibold px-6 py-2.5 shadow-sm hover:brightness-105 active:scale-[.97] transition-all focus:outline-none focus:ring-2 focus:ring-brand-green focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-brand-secondary {
+    @apply inline-flex items-center justify-center rounded-full border border-brand-orange text-gray-800 dark:text-gray-100 font-medium px-5 py-2.5 bg-white hover:bg-brand-orange/10 active:scale-[.97] transition-all focus:outline-none focus:ring-2 focus:ring-brand-green focus:ring-offset-2;
+  }
+  .chip-muted {
+    @apply inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/70 backdrop-blur-sm text-sm font-medium text-gray-700 shadow-sm border border-gray-200;
+  }
+  .card-surface {
+    @apply bg-white rounded-2xl shadow-elevate border border-gray-100;
+  }
+  .dropzone-modern {
+    @apply relative rounded-2xl border border-dashed border-brand-green/40 bg-gradient-to-br from-white to-brand-orange/5 p-10 text-center transition-all cursor-pointer hover:border-brand-green/70 hover:shadow-elevate focus:outline-none focus:ring-2 focus:ring-brand-green;
+  }
+  .dropzone-modern.dragover {
+    @apply border-brand-green bg-brand-green/5;
   }
 }
 

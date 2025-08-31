@@ -1,6 +1,6 @@
 # Google Authentication Setup Instructions
 
-This document provides step-by-step instructions for setting up Google Authentication for the Hill Calories AI application.
+This document provides step-by-step instructions for setting up Google Authentication for the CalorieValorie application.
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
@@ -16,7 +16,7 @@ This document provides step-by-step instructions for setting up Google Authentic
 - A Google account
 - Access to Google Cloud Console
 - Node.js and npm installed locally
-- The Hill Calories AI application running locally
+- The CalorieValorie application running locally
 
 ## Google Cloud Console Setup
 
@@ -25,7 +25,7 @@ This document provides step-by-step instructions for setting up Google Authentic
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
 2. Click on the project dropdown at the top of the page
 3. Click "New Project"
-4. Enter a project name (e.g., "hill-calories-ai")
+4. Enter a project name (e.g., "calorie-valorie")
 5. Click "Create"
 
 ### Step 2: Enable Google Sign-In API
@@ -41,7 +41,7 @@ This document provides step-by-step instructions for setting up Google Authentic
 2. Choose "External" user type (unless you have a Google Workspace account)
 3. Click "Create"
 4. Fill in the required information:
-   - **App name**: Hill Calories AI
+   - **App name**: CalorieValorie
    - **User support email**: Your email address
    - **App logo**: (Optional) Upload your app logo
    - **App domain**: Your domain (e.g., hillcalories.com)
@@ -57,7 +57,7 @@ This document provides step-by-step instructions for setting up Google Authentic
 1. Navigate to "APIs & Services" > "Credentials"
 2. Click "Create Credentials" > "OAuth client ID"
 3. Choose "Web application" as the application type
-4. Enter a name for your OAuth client (e.g., "Hill Calories AI Web Client")
+4. Enter a name for your OAuth client (e.g., "CalorieValorie Web Client")
 5. Add Authorized JavaScript origins:
    - For local development: `http://localhost:3000`, `http://localhost:3003`, `http://localhost:5173`
    - For production: `https://yourdomain.com`
@@ -226,7 +226,7 @@ Deploy the built files to your hosting platform.
 3. **Check Authentication State:**
    ```javascript
    // In browser console
-   console.log('Auth state:', JSON.parse(localStorage.getItem('hill_calories_user')))
+   console.log('Auth state:', JSON.parse(localStorage.getItem('calorie_valorie_user')))
    ```
 
 ### Getting Help

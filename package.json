@@ -1,5 +1,5 @@
 {
-  "name": "hill-calories-ai",
+  "name": "calorie-valorie",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.56.1",
+    "framer-motion": "^11.18.2",
     "google-auth-library": "^10.3.0",
     "js-cookie": "^3.0.5",
     "react": "^18.2.0",

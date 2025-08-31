@@ -1,4 +1,4 @@
-# 🏔️ Hill Calories AI - Smart Nutrition Analyzer
+# 🏋️ CaloFit - Smart Nutrition Analyzer
 
 A fast, mobile-first landing page that lets users upload or capture meal photos and get instant macronutrient analytics (protein, carbs, fat) via AI analysis.
 
@@ -49,7 +49,7 @@ npm run preview
 ## 📁 Project Structure
 
 ```
-hill-calories-ai/
+calorie-valorie/
 ├── src/
 │   ├── components/
 │   │   ├── Header.jsx

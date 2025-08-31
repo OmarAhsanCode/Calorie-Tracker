@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import Cookies from 'js-cookie'
+import { profileService } from '../lib/supabase'
 
 const AuthContext = createContext()
 
@@ -13,6 +14,8 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false)
 
@@ -99,19 +102,33 @@ export const AuthProvider = ({ children }) => {
     initializeGoogleSignIn()
   }, [])
 
-  // Check for existing authentication on mount
+  // Check for existing authentication and profile on mount
   useEffect(() => {
-    const checkExistingAuth = () => {
+    const checkExistingAuth = async () => {
       try {
-        const storedUser = Cookies.get('hill_calories_user')
+        const storedUser = Cookies.get('calorie_valorie_user')
         if (storedUser) {
           const userData = JSON.parse(storedUser)
           setUser(userData)
+          
+          // Check if user has a profile in Supabase
+          try {
+            const userProfile = await profileService.getProfile(userData.id)
+            if (userProfile) {
+              setProfile(userProfile)
+              setNeedsOnboarding(false)
+            } else {
+              setNeedsOnboarding(true)
+            }
+          } catch (error) {
+            console.error('Error fetching profile:', error)
+            setNeedsOnboarding(true)
+          }
         }
       } catch (error) {
         console.error('Error checking existing auth:', error)
         // Clear corrupted cookie
-        Cookies.remove('hill_calories_user')
+        Cookies.remove('calorie_valorie_user')
       } finally {
         setIsLoading(false)
       }
@@ -147,11 +164,25 @@ export const AuthProvider = ({ children }) => {
       setUser(userData)
       
       // Store in cookie (expires in 7 days)
-      Cookies.set('hill_calories_user', JSON.stringify(userData), { 
+      Cookies.set('calorie_valorie_user', JSON.stringify(userData), { 
         expires: 7,
         secure: window.location.protocol === 'https:',
         sameSite: 'lax'
       })
+
+      // Check if user has a profile in Supabase
+      try {
+        const userProfile = await profileService.getProfile(userData.id)
+        if (userProfile) {
+          setProfile(userProfile)
+          setNeedsOnboarding(false)
+        } else {
+          setNeedsOnboarding(true)
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+        setNeedsOnboarding(true)
+      }
 
       console.log('User signed in successfully:', userData.name)
       
@@ -227,9 +258,11 @@ export const AuthProvider = ({ children }) => {
       
       // Clear user state
       setUser(null)
+      setProfile(null)
+      setNeedsOnboarding(false)
       
       // Remove cookie
-      Cookies.remove('hill_calories_user')
+      Cookies.remove('calorie_valorie_user')
       
       // Sign out from Google (if available)
       if (window.google) {
@@ -245,6 +278,12 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Complete onboarding
+  const completeOnboarding = (userProfile) => {
+    setProfile(userProfile)
+    setNeedsOnboarding(false)
+  }
+
   // Show Google One Tap prompt
   const showOneTapPrompt = () => {
     if (window.google && isGoogleLoaded && !user) {
@@ -254,11 +293,14 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    profile,
+    needsOnboarding,
     isLoading,
     isGoogleLoaded,
     signIn,
     signOut,
     showOneTapPrompt,
+    completeOnboarding,
     isAuthenticated: !!user
   }
 

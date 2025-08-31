@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   const [dragActive, setDragActive] = useState(false)
@@ -36,15 +36,11 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   }, [stream])
 
   const handleFile = (file) => {
-    if (file && file.type.startsWith('image/')) {
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => setPreview(e.target.result)
-      reader.readAsDataURL(file)
-      
-      // Process the image
-      onImageUpload(file)
-    }
+    if (!file || !file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = (e) => setPreview(e.target.result)
+    reader.readAsDataURL(file)
+    onImageUpload(file)
   }
 
   const handleDrag = (e) => {
@@ -80,81 +76,39 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   const openCamera = async () => {
     setCameraError(null)
     setVideoReady(false)
-    
     try {
-      // Request camera permission and access - works on both desktop and mobile
-      let mediaStream;
-      
+      let mediaStream
       try {
-        // Try with ideal settings first
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
-            facingMode: { ideal: 'environment' }, // Prefer back camera but allow front on desktop
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
             width: { ideal: 1920, min: 640 },
             height: { ideal: 1080, min: 480 },
-            aspectRatio: { ideal: 16/9 }
-          } 
+            aspectRatio: { ideal: 16 / 9 }
+          }
         })
-      } catch (error) {
-        console.log('Falling back to basic camera settings')
-        // Fallback to basic settings if the above fails
-        mediaStream = await navigator.mediaDevices.getUserMedia({ 
-          video: true 
-        })
+      } catch {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true })
       }
-      
       setStream(mediaStream)
       setShowCamera(true)
-      
-      // Set up video stream for both desktop and mobile
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-        
-        // Add multiple event listeners to ensure video loads properly
-        const video = videoRef.current
-        
-        const handleVideoReady = () => {
-          console.log('Video ready!')
-          setVideoReady(true)
+      const video = videoRef.current
+      if (video) {
+        video.srcObject = mediaStream
+        const markReady = () => setVideoReady(true)
+        video.addEventListener('loadedmetadata', markReady, { once: true })
+        video.addEventListener('canplay', markReady, { once: true })
+        video.addEventListener('playing', markReady, { once: true })
+        const attemptPlay = () => {
+          const p = video.play()
+          if (p?.then) p.then(markReady).catch(() => setTimeout(attemptPlay, 400))
         }
-        
-        // Try multiple events to detect when video is ready
-        video.addEventListener('loadedmetadata', handleVideoReady)
-        video.addEventListener('canplay', handleVideoReady)
-        video.addEventListener('playing', handleVideoReady)
-        
-        // Ensure video plays
-        const playPromise = video.play()
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('Video started playing')
-              handleVideoReady()
-            })
-            .catch(error => {
-              console.log('Video play failed:', error)
-              // Try again after a short delay
-              setTimeout(() => {
-                if (video && video.srcObject) {
-                  video.play()
-                    .then(() => handleVideoReady())
-                    .catch(console.error)
-                }
-              }, 500)
-            })
-        }
-        
-        // Fallback: Set video ready after 2 seconds if events don't fire
-        setTimeout(() => {
-          if (video.srcObject && !videoReady) {
-            console.log('Fallback: Setting video ready')
-            setVideoReady(true)
-          }
-        }, 2000)
+        attemptPlay()
+        setTimeout(() => { if (!videoReady) setVideoReady(true) }, 2000)
       }
-    } catch (error) {
-      console.error('Camera access error:', error)
-      setCameraError(getErrorMessage(error))
+    } catch (err) {
+      console.error('Camera access error:', err)
+      setCameraError(getErrorMessage(err))
     }
   }
 
@@ -176,36 +130,21 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   }
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      const context = canvas.getContext('2d')
-      
-      // Set canvas dimensions to match video
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
-      
-      // Draw video frame to canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height)
-      
-      // Convert canvas to blob
-      canvas.toBlob((blob) => {
-        if (blob) {
-          // Create a File object from the blob
-          const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' })
-          
-          // Create preview URL
-          const previewUrl = URL.createObjectURL(blob)
-          setPreview(previewUrl)
-          
-          // Close camera
-          closeCamera()
-          
-          // Process the image
-          handleFile(file)
-        }
-      }, 'image/jpeg', 0.9)
-    }
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+    const context = canvas.getContext('2d')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      if (!blob) return
+      const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' })
+      const previewUrl = URL.createObjectURL(blob)
+      setPreview(previewUrl)
+      closeCamera()
+      handleFile(file)
+    }, 'image/jpeg', 0.9)
   }
 
   const closeCamera = () => {
@@ -219,21 +158,36 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Analyze Your Meal
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          Upload a photo or take a picture to get instant nutrition analysis
-        </p>
-      </div>
+    <div id="upload" className="card-surface p-6 sm:p-8 relative overflow-hidden">
+      <div className="absolute -bottom-24 -left-10 w-72 h-72 bg-gradient-to-tr from-brand-orange/10 to-brand-green/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Analyze Your Meal</h2>
+            <p className="text-sm text-gray-600 max-w-md">Snap a clear, well-lit photo. Avoid cluttered backgrounds for best recognition.</p>
+          </div>
+          <span className="hidden sm:inline-flex items-center text-xs font-medium bg-brand-green/10 text-brand-green px-3 py-1 rounded-full border border-brand-green/30">Image AI</span>
+        </div>
 
       {isAnalyzing ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 dark:border-primary-400 mb-4"></div>
-          <p className="text-lg font-medium text-gray-700 dark:text-gray-300">Analyzing your meal...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This may take a few seconds</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative mb-6">
+            <div className="h-20 w-20 rounded-full border-4 border-brand-green/20 border-t-brand-green animate-spin" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-brand-green/20 to-brand-orange/20 animate-pulse opacity-30" />
+          </div>
+          <p className="text-base font-semibold text-gray-800">Analyzing your meal...</p>
+          <p className="text-sm text-gray-500 mt-2">Identifying food items & calculating macros</p>
+          <div className="mt-8 w-full max-w-sm space-y-3">
+            {['Detecting plate', 'Parsing ingredients', 'Estimating macros'].map(s => (
+              <div key={s} className="flex items-center gap-3">
+                <div className="w-2.5 h-2.5 rounded-full bg-brand-green animate-pulse" />
+                <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full w-2/3 bg-brand-green/30 animate-[pulse_1.8s_ease-in-out_infinite]" />
+                </div>
+                <span className="text-[11px] text-gray-500 font-medium">{s}</span>
+              </div>
+            ))}
+          </div>
         </div>
       ) : showCamera ? (
         <div className="relative">
@@ -303,67 +257,60 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
       ) : (
         <>
           {preview && (
-            <div className="mb-6">
+            <div className="mb-6 animate-fadeIn">
               <div className="text-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">📷 Photo Preview</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Your captured meal photo</p>
+                <h3 className="text-lg font-semibold text-gray-900">📷 Photo Preview</h3>
+                <p className="text-xs text-gray-500">Make sure the meal is centered & fully visible</p>
               </div>
-              <div className="relative max-w-md mx-auto">
-                <img 
-                  src={preview} 
-                  alt="Captured meal preview" 
-                  className="w-full rounded-lg shadow-lg border-2 border-green-200 dark:border-green-600"
+              <div className="relative max-w-md mx-auto rounded-2xl overflow-hidden shadow-elevate border border-brand-green/30">
+                <img
+                  src={preview}
+                  alt="Captured meal preview"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                  ✓ Captured
+                <div className="absolute top-3 right-3 bg-brand-green text-white text-[10px] font-semibold px-2 py-1 rounded-full shadow-sm">
+                  READY
                 </div>
-              </div>
-              <div className="text-center mt-3">
-                <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                  📤 Photo ready for analysis!
-                </p>
               </div>
             </div>
           )}
 
           <div
-            className={`upload-area ${dragActive ? 'dragover' : ''} mb-6`}
+            role="button"
+            tabIndex={0}
+            aria-label="Upload meal photo"
+            className={`dropzone-modern ${dragActive ? 'dragover' : ''} mb-6`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={openFileDialog}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFileDialog() } }}
           >
-            <div className="flex flex-col items-center">
-              <svg className="w-12 h-12 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Drop your meal photo here
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                or click to browse files
-              </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500">
-                Supports JPG, PNG, WebP (max 10MB)
-              </p>
+            <div className="flex flex-col items-center relative z-10">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-green to-brand-orange flex items-center justify-center text-2xl text-white shadow-md mb-5">📸</div>
+              <p className="text-lg font-semibold text-gray-800 mb-1">Snap your meal or drag & drop</p>
+              <p className="text-sm text-gray-500 mb-4">Clear photo • Good lighting • One plate</p>
+              <p className="text-[11px] text-gray-400 tracking-wide">JPG · PNG · WebP (max 10MB)</p>
             </div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-brand-green/5 to-brand-orange/5 rounded-2xl" />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
+              id="upload-btn"
               onClick={openFileDialog}
-              className="btn-primary flex items-center justify-center"
+              className="btn-brand-primary flex items-center justify-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               Upload Photo
             </button>
-            
             <button
+              id="takephoto-btn"
               onClick={openCamera}
-              className="btn-secondary flex items-center justify-center"
+              className="btn-brand-secondary flex items-center justify-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -390,6 +337,7 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
       {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
+        id="upload-input"
         type="file"
         accept="image/*"
         onChange={handleFileInput}
@@ -403,6 +351,7 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
         onChange={handleFileInput}
         className="hidden"
       />
+      </div>
     </div>
   )
 }

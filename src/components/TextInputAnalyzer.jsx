@@ -137,15 +137,17 @@ const TextInputAnalyzer = ({ onTextAnalysis, isAnalyzing, onMockData, searchHist
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 mb-6">
-      <div className="text-center mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Describe Your Meal
-        </h2>
-        <p className="text-gray-600 dark:text-gray-300">
-          Type what you ate and get instant nutrition analysis
-        </p>
-      </div>
+    <div id="describe" className="card-surface mb-8 p-6 sm:p-8 relative overflow-hidden">
+      {/* Background aura for subtle depth */}
+      <div className="absolute -top-20 -right-14 w-64 h-64 bg-gradient-to-br from-brand-green/5 to-brand-orange/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Describe Your Meal</h2>
+            <p className="text-sm text-gray-600 max-w-md">Be specific: include cooking method, portion size, and sides (e.g., "grilled salmon 150g with quinoa and roasted veggies").</p>
+          </div>
+          <span className="hidden sm:inline-flex items-center text-xs font-medium bg-brand-orange/15 text-brand-orange px-3 py-1 rounded-full border border-brand-orange/30">AI Powered</span>
+        </div>
 
       {isAnalyzing ? (
         <div className="flex flex-col items-center justify-center py-16">
@@ -156,14 +158,17 @@ const TextInputAnalyzer = ({ onTextAnalysis, isAnalyzing, onMockData, searchHist
       ) : (
         <>
           <form onSubmit={handleSubmit} className="mb-6">
-            <div className="relative">
+            <div className="relative group">
+              <label htmlFor="meal-desc" className="sr-only">Meal description</label>
               <textarea
+                id="meal-desc"
                 value={foodText}
                 onChange={handleTextChange}
-                placeholder="Describe what you ate... (e.g., grilled chicken breast with quinoa and vegetables)"
-                className="w-full h-32 px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-primary-500 dark:focus:border-primary-400 resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 bg-white dark:bg-gray-700"
+                placeholder="e.g. grilled chicken breast (200g) with brown rice and steamed broccoli"
+                className="w-full h-40 leading-relaxed px-4 py-4 pr-16 rounded-2xl border border-gray-200 focus:border-brand-green focus:ring-2 focus:ring-brand-green/30 bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-400 text-sm shadow-inner transition-colors"
                 maxLength={500}
               />
+              <div className="absolute inset-0 rounded-2xl pointer-events-none border border-transparent group-focus-within:border-brand-green/40" />
               <div className="absolute bottom-3 right-3 flex items-center space-x-2">
                 <span className="text-xs text-gray-400 dark:text-gray-500">
                   {foodText.length}/500
@@ -228,26 +233,27 @@ const TextInputAnalyzer = ({ onTextAnalysis, isAnalyzing, onMockData, searchHist
               </div>
             )}
             
-            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-4 mt-5">
               <button
+                id="analyze-btn"
                 type="submit"
                 disabled={!foodText.trim() || isAnalyzing}
-                className="btn-primary flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-brand-primary w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Analyze Nutrition
               </button>
-              
               <button
                 type="button"
                 onClick={handleTestWithMockText}
-                className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                className="btn-brand-secondary w-full sm:w-auto justify-center"
               >
-                Test with Sample Data
+                Use sample data
               </button>
             </div>
+            <p className="mt-3 text-xs text-gray-500">Need inspiration? Try: "overnight oats with almond milk, chia seeds, blueberries"</p>
           </form>
 
           {/* Search History */}
@@ -370,36 +376,29 @@ const TextInputAnalyzer = ({ onTextAnalysis, isAnalyzing, onMockData, searchHist
           )}
 
           {/* Tips */}
-          <div className="bg-blue-50 rounded-lg p-4 mt-6">
-            <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              Tips for better results:
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h5 className="text-xs font-semibold text-blue-800 mb-1">📝 Text & Voice Input:</h5>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Include quantities when possible (e.g., "200g chicken breast")</li>
-                  <li>• Mention cooking methods (e.g., "grilled", "baked", "fried")</li>
-                  <li>• List all ingredients and sides</li>
-                  <li>• Be specific about portions and sizes</li>
-                </ul>
-              </div>
-              <div>
-                <h5 className="text-xs font-semibold text-blue-800 mb-1">🎤 Voice Recording:</h5>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Speak clearly and at normal pace</li>
-                  <li>• Use the microphone button next to the text box</li>
-                  <li>• Works best in quiet environments</li>
-                  <li>• Click again to stop recording</li>
-                </ul>
-              </div>
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-brand-green/5 border border-brand-green/20 rounded-xl p-4">
+              <h5 className="text-xs font-semibold text-brand-green mb-2 tracking-wide uppercase">📝 Text & Voice Input</h5>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• Include quantities (e.g., 200g chicken)</li>
+                <li>• Add cooking method (grilled / baked)</li>
+                <li>• List sides & sauces</li>
+                <li>• One meal per analysis for clarity</li>
+              </ul>
+            </div>
+            <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-xl p-4">
+              <h5 className="text-xs font-semibold text-brand-orange mb-2 tracking-wide uppercase">🎤 Voice Recording</h5>
+              <ul className="text-sm text-gray-700 space-y-1">
+                <li>• Speak clearly at normal pace</li>
+                <li>• Minimize background noise</li>
+                <li>• Review text before analyzing</li>
+                <li>• Stop recording if done early</li>
+              </ul>
             </div>
           </div>
         </>
       )}
+      </div>
     </div>
   )
 }

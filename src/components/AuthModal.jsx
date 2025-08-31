@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import FileLogo from '../images/file.svg'
 
 const AuthModal = ({ isOpen, onClose }) => {
   const { signIn, isGoogleLoaded } = useAuth()
@@ -68,16 +69,23 @@ const AuthModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
       />
       
-      {/* Modal */}
-      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        {/* Close button */}
+      {/* Modal container */}
+      <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+        {/* Modal */}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="auth-modal-title"
+          className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-6 py-6 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md"
+        >
+          {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -91,11 +99,15 @@ const AuthModal = ({ isOpen, onClose }) => {
         <div className="text-center">
           {/* Logo/Header */}
           <div className="mb-6">
-            <div className="mx-auto w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mb-4">
-              <span className="text-2xl">🏔️</span>
+            <div className="mx-auto w-16 h-16 flex items-center justify-center mb-4">
+              <img 
+                src={FileLogo} 
+                alt="CaloFit Logo" 
+                className="w-12 h-12"
+              />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Welcome to Hill Calories AI
+            <h2 id="auth-modal-title" className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Welcome to CaloFit
             </h2>
             <p className="text-gray-600 dark:text-gray-300">
               Sign in to save your nutrition history and access personalized features
@@ -165,8 +177,9 @@ const AuthModal = ({ isOpen, onClose }) => {
           {/* Privacy note */}
           <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
             By signing in, you agree to our Terms of Service and Privacy Policy. 
-            We'll only access your basic profile information.
+            We&apos;ll only access your basic profile information.
           </p>
+        </div>
         </div>
       </div>
     </div>
