@@ -76,7 +76,7 @@ function AppContent() {
       console.log('Sending text request to webhook...')
 
       // Send to the same webhook as image analysis
-      const response = await fetch('https://submastery.app.n8n.cloud/webhook-test/Calapp', {
+      const response = await fetch('https://submastery.app.n8n.cloud/webhook/Calapp', {
         method: 'POST',
         body: formData
       })
@@ -145,7 +145,7 @@ function AppContent() {
       console.log('Sending request to webhook...')
 
       // Send to webhook
-      const response = await fetch('https://submastery.app.n8n.cloud/webhook-test/Calapp', {
+      const response = await fetch('https://submastery.app.n8n.cloud/webhook/Calapp', {
         method: 'POST',
         body: formData
       })
