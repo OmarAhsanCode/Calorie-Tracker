@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { foodService } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCalorieProgress } from '../contexts/CalorieProgressContext';
 
 const FoodLogger = ({ onFoodLogged }) => {
   const { user } = useAuth();
+  const { addNutrition } = useCalorieProgress();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState('lunch');
@@ -29,6 +31,12 @@ const FoodLogger = ({ onFoodLogged }) => {
 
       // Save each food item from the AI analysis
       const savedEntries = [];
+      let addedNutrition = {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+      };
       for (const foodItem of nutritionData.foods) {
         const entryData = {
           user_id: user.id,
@@ -44,7 +52,13 @@ const FoodLogger = ({ onFoodLogged }) => {
 
         const savedEntry = await foodService.addFoodEntry(entryData);
         savedEntries.push(savedEntry);
+        addedNutrition.calories += foodItem.calories || 0;
+        addedNutrition.protein += foodItem.protein || 0;
+        addedNutrition.carbs += foodItem.carbs || 0;
+        addedNutrition.fat += foodItem.fat || 0;
       }
+
+      if (addedNutrition.calories > 0) addNutrition(addedNutrition);
 
       // Notify parent component
       if (onFoodLogged) {

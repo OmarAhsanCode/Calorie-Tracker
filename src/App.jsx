@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { CalorieProgressProvider } from './contexts/CalorieProgressContext'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import TextInputAnalyzer from './components/TextInputAnalyzer'
@@ -279,14 +280,39 @@ function AppContent() {
         </div>
       </main>
 
-      {/* Diary Button - Fixed Position */}
+      {/* Diary Button - Branded Floating Action (expands on hover) */}
       {user && (
         <button
           onClick={() => setIsDiaryOpen(true)}
-          className="fixed bottom-6 left-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg transition-all transform hover:scale-105 z-40"
+          aria-label="Open Food Diary"
           title="Open Food Diary"
+          className="group fixed bottom-6 left-6 z-40 flex items-center rounded-full bg-gradient-to-br from-brand-green to-brand-orange p-[3px] shadow-elevate hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-brand-green/40 transition-all"
         >
-          <span className="text-2xl">📖</span>
+          <span className="flex items-center rounded-full bg-white dark:bg-gray-900 pl-3 pr-3 sm:pr-4 py-2">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-white shadow-inner transition-transform duration-300 group-hover:scale-110">
+              {/* Custom brandable diary icon (nutrition journal) */}
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-sm">
+                {/* Book outline */}
+                <path d="M6.5 4.5h7.5a3.5 3.5 0 0 1 3.5 3.5v9.75c0 .414-.336.75-.75.75H6.5A2.5 2.5 0 0 1 4 16v-9A2.5 2.5 0 0 1 6.5 4.5Z" fill="url(#gradPages)" stroke="#16A34A" />
+                <path d="M14 4.5v14" stroke="#0F5132" opacity=".25" />
+                {/* Fork */}
+                <path d="M9.2 8v2.2M10.4 8v2.2M8 8v2.2" stroke="#0F5132" strokeWidth="1.4" />
+                <path d="M9.2 10.2v2.3" stroke="#0F5132" strokeWidth="1.4" strokeLinecap="round" />
+                {/* Leaf / vitality mark */}
+                <path d="M16.2 9.4c1.1-.9 1.9-1.3 2.8-1.4-.2 1-.7 1.9-1.6 2.9-.8.9-1.9 1.6-3 2 .4-1.3 1-2.6 1.8-3.5Z" fill="#FFB703" stroke="#FFB703" strokeWidth=".5" />
+                <defs>
+                  <linearGradient id="gradPages" x1="4" x2="18" y1="4" y2="19" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="100%" stopColor="#F1F5F9" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </span>
+            {/* Expanding label (hidden on very small screens) */}
+            <span className="ml-2 font-semibold text-sm text-gray-900 dark:text-gray-100 max-w-0 overflow-hidden opacity-0 translate-x-[-4px] group-hover:translate-x-0 group-hover:max-w-[90px] group-hover:opacity-100 transition-all duration-300 ease-out hidden xs:inline-block">
+              Diary
+            </span>
+          </span>
         </button>
       )}
 
@@ -312,7 +338,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <CalorieProgressProvider>
+          <AppContent />
+        </CalorieProgressProvider>
       </AuthProvider>
     </ThemeProvider>
   )

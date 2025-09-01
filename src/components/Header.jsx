@@ -19,12 +19,7 @@ const Header = ({ onOpenAuthModal }) => {
               </div>
             </div>
             <span className="font-extrabold text-lg tracking-tight text-gray-900 dark:text-white">CaloFit</span>
-            {/* Minimal nav (anchors for future sections). Keep semantic but non-breaking */}
-            <nav className="hidden md:flex items-center space-x-6 ml-6 text-sm font-medium text-gray-600 dark:text-gray-300">
-              <a href="#describe" className="hover:text-gray-900 dark:hover:text-white transition-colors">Describe</a>
-              <a href="#upload" className="hover:text-gray-900 dark:hover:text-white transition-colors">Upload</a>
-              <a href="#about" className="hover:text-gray-900 dark:hover:text-white transition-colors">About</a>
-            </nav>
+            {/* Nav links removed per request; placeholder kept for potential future items */}
           </div>
 
           {/* Actions */}

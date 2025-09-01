@@ -5,12 +5,11 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
   const [preview, setPreview] = useState(null)
   const [cameraError, setCameraError] = useState(null)
   const fileInputRef = useRef(null)
-  const cameraInputRef = useRef(null)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const [showCamera, setShowCamera] = useState(false)
   const [stream, setStream] = useState(null)
-  const [videoReady, setVideoReady] = useState(false)
+  const [isStreamReady, setIsStreamReady] = useState(false)
 
   // Handle clearPreview prop to clear the image preview
   useEffect(() => {
@@ -20,20 +19,52 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-      if (cameraInputRef.current) {
-        cameraInputRef.current.value = ''
-      }
     }
   }, [clearPreview])
 
-  // Cleanup camera stream on component unmount
+  // Cleanup camera stream on component unmount or when closing
   useEffect(() => {
     return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
+      stopCamera()
+    }
+  }, [])
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop()
+      })
+      setStream(null)
+    }
+    setIsStreamReady(false)
+  }
+
+  // Effect to set up video when stream and showCamera are ready
+  useEffect(() => {
+    if (stream && showCamera && videoRef.current) {
+      const video = videoRef.current
+      console.log('Setting up video in useEffect')
+      video.srcObject = stream
+      
+      const handleMetadata = () => {
+        console.log('Video metadata loaded:', video.videoWidth, 'x', video.videoHeight)
+        video.play().then(() => {
+          console.log('Video playing successfully')
+          setIsStreamReady(true)
+        }).catch(err => {
+          console.error('Video play error:', err)
+          setIsStreamReady(true)
+        })
+      }
+      
+      video.addEventListener('loadedmetadata', handleMetadata)
+      
+      // Cleanup function
+      return () => {
+        video.removeEventListener('loadedmetadata', handleMetadata)
       }
     }
-  }, [stream])
+  }, [stream, showCamera])
 
   const handleFile = (file) => {
     if (!file || !file.type.startsWith('image/')) return
@@ -73,87 +104,112 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
     fileInputRef.current?.click()
   }
 
-  const openCamera = async () => {
+  const startCamera = async () => {
     setCameraError(null)
-    setVideoReady(false)
+    setIsStreamReady(false)
+    
     try {
+      // Check if mediaDevices is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported on this browser')
+      }
+
+      // Request camera access with progressive fallback
       let mediaStream
+      
       try {
+        // Try with back camera and high quality first
         mediaStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920, min: 640 },
-            height: { ideal: 1080, min: 480 },
-            aspectRatio: { ideal: 16 / 9 }
+            facingMode: 'environment', // Back camera
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
           }
         })
-      } catch {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true })
+      } catch (err) {
+        console.log('Back camera failed, trying front camera:', err)
+        try {
+          // Fallback to front camera
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: 'user',
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          })
+        } catch (err2) {
+          console.log('Front camera failed, trying any camera:', err2)
+          // Final fallback - any available camera
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+          })
+        }
       }
+
       setStream(mediaStream)
       setShowCamera(true)
-      const video = videoRef.current
-      if (video) {
-        video.srcObject = mediaStream
-        const markReady = () => setVideoReady(true)
-        video.addEventListener('loadedmetadata', markReady, { once: true })
-        video.addEventListener('canplay', markReady, { once: true })
-        video.addEventListener('playing', markReady, { once: true })
-        const attemptPlay = () => {
-          const p = video.play()
-          if (p?.then) p.then(markReady).catch(() => setTimeout(attemptPlay, 400))
-        }
-        attemptPlay()
-        setTimeout(() => { if (!videoReady) setVideoReady(true) }, 2000)
-      }
-    } catch (err) {
-      console.error('Camera access error:', err)
-      setCameraError(getErrorMessage(err))
+      console.log('MediaStream created successfully:', mediaStream)
+      console.log('Video tracks:', mediaStream.getVideoTracks())
+
+    } catch (error) {
+      console.error('Camera access error:', error)
+      setCameraError(getCameraErrorMessage(error))
+      setShowCamera(false)
     }
   }
 
-  const getErrorMessage = (error) => {
-    switch (error.name) {
-      case 'NotAllowedError':
-        return 'Camera access denied. Please allow camera permissions in your browser settings and try again.'
-      case 'NotFoundError':
-        return 'No camera found on this device. Please connect a camera or use the file upload option.'
-      case 'NotSupportedError':
-        return 'Camera is not supported on this browser. Please try a different browser or use file upload.'
-      case 'NotReadableError':
-        return 'Camera is already in use by another application. Please close other apps using the camera.'
-      case 'OverconstrainedError':
-        return 'Camera settings not supported. Trying with default settings...'
-      default:
-        return 'Unable to access camera. Please check your camera connection and browser permissions.'
+  const getCameraErrorMessage = (error) => {
+    if (error.name === 'NotAllowedError') {
+      return 'Camera access denied. Please allow camera permissions in your browser.'
+    } else if (error.name === 'NotFoundError') {
+      return 'No camera found. Please connect a camera or use file upload.'
+    } else if (error.name === 'NotSupportedError') {
+      return 'Camera not supported on this browser. Please use file upload.'
+    } else if (error.name === 'NotReadableError') {
+      return 'Camera is being used by another application. Please close other apps using the camera.'
+    } else {
+      return 'Camera error: ' + (error.message || 'Unable to access camera')
     }
   }
 
   const capturePhoto = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
-    if (!video || !canvas) return
-    const context = canvas.getContext('2d')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    canvas.toBlob((blob) => {
-      if (!blob) return
-      const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' })
-      const previewUrl = URL.createObjectURL(blob)
-      setPreview(previewUrl)
-      closeCamera()
-      handleFile(file)
-    }, 'image/jpeg', 0.9)
+    
+    if (!video || !canvas || !isStreamReady) {
+      console.error('Video or canvas not ready')
+      return
+    }
+
+    try {
+      // Set canvas dimensions to match video
+      canvas.width = video.videoWidth || video.clientWidth
+      canvas.height = video.videoHeight || video.clientHeight
+      
+      // Draw the video frame to canvas
+      const context = canvas.getContext('2d')
+      context.drawImage(video, 0, 0, canvas.width, canvas.height)
+      
+      // Convert canvas to blob and create file
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' })
+          const previewUrl = URL.createObjectURL(blob)
+          setPreview(previewUrl)
+          handleFile(file)
+          closeCamera()
+        }
+      }, 'image/jpeg', 0.9)
+      
+    } catch (error) {
+      console.error('Capture error:', error)
+      setCameraError('Failed to capture photo. Please try again.')
+    }
   }
 
   const closeCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-      setStream(null)
-    }
+    stopCamera()
     setShowCamera(false)
-    setVideoReady(false)
     setCameraError(null)
   }
 
@@ -190,67 +246,76 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
           </div>
         </div>
       ) : showCamera ? (
-        <div className="relative">
-          <div className="text-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Camera Active</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-300">Position your meal in the frame and click capture</p>
+        <div className="camera-section">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">📸 Camera Active</h3>
+            <p className="text-sm text-gray-600">Position your meal in the frame and click capture</p>
           </div>
           
-          <div className="relative max-w-2xl mx-auto">
-            {!videoReady && (
-              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 dark:border-primary-400 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">Starting camera...</p>
+          <div className="relative max-w-lg mx-auto bg-black rounded-lg overflow-hidden shadow-xl">
+            {/* Video element - always visible */}
+            <video
+              ref={videoRef}
+              className="w-full h-auto rounded-lg block"
+              autoPlay
+              playsInline
+              muted
+              controls={false}
+              style={{ 
+                minHeight: '300px',
+                maxHeight: '500px',
+                objectFit: 'cover',
+                backgroundColor: '#000000',
+                display: 'block',
+                visibility: 'visible'
+              }}
+            />
+            
+            {/* Loading overlay - only shows when not ready */}
+            {!isStreamReady && (
+              <div className="absolute inset-0 bg-gray-900 bg-opacity-90 flex items-center justify-center z-20">
+                <div className="text-center text-white">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-lg font-medium">Starting camera...</p>
+                  <p className="text-sm opacity-75">Please allow camera access</p>
                 </div>
               </div>
             )}
             
-            <video
-              ref={videoRef}
-              className="w-full rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-600 bg-black"
-              autoPlay
-              playsInline
-              muted
-              style={{ 
-                maxHeight: '60vh',
-                minHeight: '300px',
-                objectFit: 'cover'
-              }}
-            />
-            
-            {/* Camera overlay for better UX */}
-            {videoReady && (
-              <div className="absolute inset-0 border-2 border-dashed border-primary-400 dark:border-primary-500 rounded-lg pointer-events-none opacity-30"></div>
+            {/* Camera frame overlay */}
+            {isStreamReady && (
+              <div className="absolute inset-4 border-2 border-dashed border-blue-400 rounded-lg pointer-events-none opacity-60"></div>
             )}
           </div>
           
+          {/* Hidden canvas for photo capture */}
           <canvas ref={canvasRef} className="hidden" />
           
+          {/* Camera controls */}
           <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={capturePhoto}
-              disabled={!stream} // Only disable if no stream at all
-              className="bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200 flex items-center shadow-lg"
+              disabled={!isStreamReady}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg"
             >
-              <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              📸 Capture Photo
+              Capture Photo
             </button>
             
             <button
               onClick={closeCamera}
-              className="bg-gray-600 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-lg"
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg"
             >
-              ✕ Cancel
+              Cancel
             </button>
           </div>
           
-          <div className="mt-4 text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              💡 Tip: Make sure your meal is well-lit and clearly visible in the frame
+          <div className="text-center mt-4">
+            <p className="text-xs text-gray-500">
+              💡 Tip: Make sure your meal is well-lit and fits completely in the frame
             </p>
           </div>
         </div>
@@ -309,7 +374,7 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
             </button>
             <button
               id="takephoto-btn"
-              onClick={openCamera}
+              onClick={startCamera}
               className="btn-brand-secondary flex items-center justify-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -334,20 +399,12 @@ const ImageUploader = ({ onImageUpload, isAnalyzing, clearPreview }) => {
         </div>
       )}
 
-      {/* Hidden file inputs */}
+      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         id="upload-input"
         type="file"
         accept="image/*"
-        onChange={handleFileInput}
-        className="hidden"
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
         onChange={handleFileInput}
         className="hidden"
       />
