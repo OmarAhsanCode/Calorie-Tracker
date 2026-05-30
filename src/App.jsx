@@ -90,7 +90,7 @@ function AppContent() {
             'Authorization': `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`
           },
           body: JSON.stringify({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3.5-flash',
             messages: [{ role: 'user', content: prompt }]
           })
         }
@@ -170,7 +170,7 @@ function AppContent() {
             'Authorization': `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`
           },
           body: JSON.stringify({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3.5-flash',
             messages: [
               {
                 role: 'user',
