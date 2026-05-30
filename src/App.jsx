@@ -62,74 +62,71 @@ function AppContent() {
            (typeof status === 'string' && status.toLowerCase().includes('successfully'))
   }
 
-  const handleTextAnalysis = async (foodText) => {
-    setIsAnalyzingText(true)
-    setNutritionData(null)
-
+  const handleTextAnalysis = async (mealDescription) => {
+    setIsAnalyzingText(true);
+    setNutritionData(null);
     try {
-      console.log('Starting text analysis for:', foodText)
-      
-      // Create FormData for text input
-      const formData = new FormData()
-      formData.append('text', foodText)
-      
-      console.log('Sending text request to webhook...')
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-      // Send to the same webhook as image analysis
-      const response = await fetch('https://submastery.app.n8n.cloud/webhook/Calapp', {
-        method: 'POST',
-        body: formData
-      })
+      const prompt = `Analyze this meal description and provide nutritional information in this exact JSON format, no other text:
+    {
+      "foods": ["food item 1", "food item 2"],
+      "calories": 000,
+      "protein": 00,
+      "carbs": 00,
+      "fat": 00,
+      "confidence": 0.9,
+      "notes": "brief description"
+    }
+    
+    Meal description: ${mealDescription}
+    
+    Estimate values based on typical serving sizes.`;
 
-      console.log('Response status:', response.status)
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Map to what NutritionResults expects
+        const mappedData = {
+          status: 'success',
+          food: (parsed.foods || []).map((name, index) => ({
+            name,
+            quantity: '1 serving',
+            calories: index === 0 ? (parsed.calories || 0) : 0,
+            protein: index === 0 ? (parsed.protein || 0) : 0,
+            carbs: index === 0 ? (parsed.carbs || 0) : 0,
+            fat: index === 0 ? (parsed.fat || 0) : 0
+          })),
+          total: {
+            calories: parsed.calories || 0,
+            protein: parsed.protein || 0,
+            carbs: parsed.carbs || 0,
+            fat: parsed.fat || 0
+          }
+        };
 
-      const data = await response.json()
-      console.log('Raw webhook response:', data)
-      
-      // Process the webhook response for text input (same format as image)
-      if (data && data.length > 0 && data[0].output) {
-        const output = data[0].output
-        
-        // Check if the status indicates an error (no food items detected)
-        if (!isSuccessStatus(output.status) && typeof output.status === 'string') {
-          console.log('No food items detected:', output.status)
-          setNutritionData({
-            error: true,
-            message: "Oops! Only food items allowed. Please describe what you ate, like 'grilled chicken with rice' or 'apple and peanut butter'."
-          })
-        } else if (isSuccessStatus(output.status)) {
-          console.log('Processed text output:', output)
-          setNutritionData(output)
-          
-          // Add to search history
-          addToSearchHistory({
-            type: 'text',
-            query: foodText,
-            timestamp: new Date().toLocaleString(),
-            result: output
-          })
-        } else {
-          throw new Error('Invalid response format from webhook')
-        }
-      } else {
-        console.log('Invalid text response format:', data)
-        throw new Error('Invalid response format from webhook')
+        setNutritionData(mappedData);
+
+        // Add to search history
+        addToSearchHistory({
+          type: 'text',
+          query: mealDescription,
+          timestamp: new Date().toLocaleString(),
+          result: mappedData
+        });
       }
     } catch (error) {
-      console.error('Error analyzing text:', error)
-      // Set error state or fallback data
-      setNutritionData({
-        error: true,
-        message: `Failed to analyze the food description: ${error.message}. Please try again.`
-      })
+      console.error('Error analyzing text:', error);
+      alert('Analysis failed. Check your API key and try again.');
     } finally {
-      setIsAnalyzingText(false)
+      setIsAnalyzingText(false);
     }
-  }
+  };
 
   const handleImageAnalysis = async (imageFile) => {
     setIsAnalyzing(true);
