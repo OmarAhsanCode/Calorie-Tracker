@@ -68,13 +68,22 @@ function AppContent() {
     try {
       const prompt = `Analyze this meal description and provide nutritional information in this exact JSON format, no other text:
     {
-      "foods": ["food item 1", "food item 2"],
-      "calories": 000,
-      "protein": 00,
-      "carbs": 00,
-      "fat": 00,
-      "confidence": 0.9,
-      "notes": "brief description"
+      "food": [
+        {
+          "name": "food item name",
+          "quantity": "typical serving size (e.g. 150g, 1 serving)",
+          "calories": 150,
+          "protein": 10,
+          "carbs": 20,
+          "fat": 5
+        }
+      ],
+      "total": {
+        "calories": 150,
+        "protein": 10,
+        "carbs": 20,
+        "fat": 5
+      }
     }
     
     Meal description: ${mealDescription}
@@ -104,19 +113,22 @@ function AppContent() {
         // Map to what NutritionResults expects
         const mappedData = {
           status: 'success',
-          food: (parsed.foods || []).map((name, index) => ({
-            name,
-            quantity: '1 serving',
-            calories: index === 0 ? (parsed.calories || 0) : 0,
-            protein: index === 0 ? (parsed.protein || 0) : 0,
-            carbs: index === 0 ? (parsed.carbs || 0) : 0,
-            fat: index === 0 ? (parsed.fat || 0) : 0
-          })),
+          food: (parsed.food || parsed.foods || []).map((item) => {
+            const isObject = typeof item === 'object' && item !== null;
+            return {
+              name: isObject ? item.name : item,
+              quantity: isObject ? (item.quantity || '1 serving') : '1 serving',
+              calories: isObject ? (Number(item.calories) || 0) : 0,
+              protein: isObject ? (Number(item.protein) || 0) : 0,
+              carbs: isObject ? (Number(item.carbs) || 0) : 0,
+              fat: isObject ? (Number(item.fat) || 0) : 0
+            };
+          }),
           total: {
-            calories: parsed.calories || 0,
-            protein: parsed.protein || 0,
-            carbs: parsed.carbs || 0,
-            fat: parsed.fat || 0
+            calories: Number(parsed.total?.calories || parsed.calories || 0),
+            protein: Number(parsed.total?.protein || parsed.protein || 0),
+            carbs: Number(parsed.total?.carbs || parsed.carbs || 0),
+            fat: Number(parsed.total?.fat || parsed.fat || 0)
           }
         };
 
@@ -151,13 +163,22 @@ function AppContent() {
 
       const prompt = `Analyze this food image and provide nutritional information in this exact JSON format, no other text:
     {
-      "foods": ["food item 1", "food item 2"],
-      "calories": 000,
-      "protein": 00,
-      "carbs": 00,
-      "fat": 00,
-      "confidence": 0.0,
-      "notes": "brief description"
+      "food": [
+        {
+          "name": "food item name",
+          "quantity": "typical serving size (e.g. 150g, 1 serving)",
+          "calories": 150,
+          "protein": 10,
+          "carbs": 20,
+          "fat": 5
+        }
+      ],
+      "total": {
+        "calories": 150,
+        "protein": 10,
+        "carbs": 20,
+        "fat": 5
+      }
     }
     Estimate values based on typical serving sizes visible in the image.`;
 
@@ -201,19 +222,22 @@ function AppContent() {
         // Map to what NutritionResults expects
         const mappedData = {
           status: 'success',
-          food: (parsed.foods || []).map((name, index) => ({
-            name,
-            quantity: '1 serving',
-            calories: index === 0 ? (parsed.calories || 0) : 0,
-            protein: index === 0 ? (parsed.protein || 0) : 0,
-            carbs: index === 0 ? (parsed.carbs || 0) : 0,
-            fat: index === 0 ? (parsed.fat || 0) : 0
-          })),
+          food: (parsed.food || parsed.foods || []).map((item) => {
+            const isObject = typeof item === 'object' && item !== null;
+            return {
+              name: isObject ? item.name : item,
+              quantity: isObject ? (item.quantity || '1 serving') : '1 serving',
+              calories: isObject ? (Number(item.calories) || 0) : 0,
+              protein: isObject ? (Number(item.protein) || 0) : 0,
+              carbs: isObject ? (Number(item.carbs) || 0) : 0,
+              fat: isObject ? (Number(item.fat) || 0) : 0
+            };
+          }),
           total: {
-            calories: parsed.calories || 0,
-            protein: parsed.protein || 0,
-            carbs: parsed.carbs || 0,
-            fat: parsed.fat || 0
+            calories: Number(parsed.total?.calories || parsed.calories || 0),
+            protein: Number(parsed.total?.protein || parsed.protein || 0),
+            carbs: Number(parsed.total?.carbs || parsed.carbs || 0),
+            fat: Number(parsed.total?.fat || parsed.fat || 0)
           }
         };
 
