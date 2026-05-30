@@ -132,61 +132,82 @@ function AppContent() {
   }
 
   const handleImageAnalysis = async (imageFile) => {
-    setIsAnalyzing(true)
-    setNutritionData(null)
-
+    setIsAnalyzing(true);
+    setNutritionData(null);
     try {
-      console.log('Starting image analysis...')
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+      // Convert image to base64
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(imageFile);
+      });
+
+      const imagePart = {
+        inlineData: {
+          data: base64,
+          mimeType: imageFile.type
+        }
+      };
+
+      const prompt = `Analyze this food image and provide nutritional information in this exact JSON format, no other text:
+    {
+      "foods": ["food item 1", "food item 2"],
+      "calories": 000,
+      "protein": 00,
+      "carbs": 00,
+      "fat": 00,
+      "confidence": 0.0,
+      "notes": "brief description"
+    }
+    Estimate values based on typical serving sizes visible in the image.`;
+
+      const result = await model.generateContent([prompt, imagePart]);
+      const text = result.response.text();
       
-      // Create FormData for image upload
-      const formData = new FormData()
-      formData.append('image', imageFile)
-      
-      console.log('Sending request to webhook...')
+      // Parse JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        // Map to what NutritionResults expects
+        const mappedData = {
+          status: 'success',
+          food: (parsed.foods || []).map((name, index) => ({
+            name,
+            quantity: '1 serving',
+            calories: index === 0 ? (parsed.calories || 0) : 0,
+            protein: index === 0 ? (parsed.protein || 0) : 0,
+            carbs: index === 0 ? (parsed.carbs || 0) : 0,
+            fat: index === 0 ? (parsed.fat || 0) : 0
+          })),
+          total: {
+            calories: parsed.calories || 0,
+            protein: parsed.protein || 0,
+            carbs: parsed.carbs || 0,
+            fat: parsed.fat || 0
+          }
+        };
 
-      // Send to webhook
-      const response = await fetch('https://submastery.app.n8n.cloud/webhook/Calapp', {
-        method: 'POST',
-        body: formData
-      })
+        setNutritionData(mappedData);
 
-      console.log('Response status:', response.status)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      console.log('Raw webhook response:', data)
-      
-      // Process the webhook response
-      if (data && data.length > 0 && data[0].output && isSuccessStatus(data[0].output.status)) {
-        const output = data[0].output
-        console.log('Processed output:', output)
-        setNutritionData(output)
-        
         // Add to search history
         addToSearchHistory({
           type: 'image',
           query: imageFile.name || 'Image Upload',
           timestamp: new Date().toLocaleString(),
-          result: output
-        })
-      } else {
-        console.log('Invalid response format:', data)
-        throw new Error('Invalid response format from webhook')
+          result: mappedData
+        });
       }
     } catch (error) {
-      console.error('Error analyzing image:', error)
-      // Set error state or fallback data
-      setNutritionData({
-        error: true,
-        message: `Failed to analyze the image: ${error.message}. Please try again.`
-      })
+      console.error('Analysis failed:', error);
+      alert('Analysis failed. Check your API key or try a different image.');
     } finally {
-      setIsAnalyzing(false)
+      setIsAnalyzing(false);
     }
-  }
+  };
 
   // Function to rerun a previous search
   const handleRerunSearch = (historyItem) => {
