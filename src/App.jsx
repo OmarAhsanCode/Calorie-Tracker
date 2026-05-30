@@ -66,10 +66,6 @@ function AppContent() {
     setIsAnalyzingText(true);
     setNutritionData(null);
     try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
       const prompt = `Analyze this meal description and provide nutritional information in this exact JSON format, no other text:
     {
       "foods": ["food item 1", "food item 2"],
@@ -85,8 +81,22 @@ function AppContent() {
     
     Estimate values based on typical serving sizes.`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gemini-1.5-flash',
+            messages: [{ role: 'user', content: prompt }]
+          })
+        }
+      );
+      const data = await response.json();
+      const text = data.choices[0].message.content;
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -132,23 +142,12 @@ function AppContent() {
     setIsAnalyzing(true);
     setNutritionData(null);
     try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      // Convert image to base64
+      // Convert image to base64 Data URL
       const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onloadend = () => resolve(reader.result);
         reader.readAsDataURL(imageFile);
       });
-
-      const imagePart = {
-        inlineData: {
-          data: base64,
-          mimeType: imageFile.type
-        }
-      };
 
       const prompt = `Analyze this food image and provide nutritional information in this exact JSON format, no other text:
     {
@@ -162,8 +161,38 @@ function AppContent() {
     }
     Estimate values based on typical serving sizes visible in the image.`;
 
-      const result = await model.generateContent([prompt, imagePart]);
-      const text = result.response.text();
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_GEMINI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'gemini-1.5-flash',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: prompt
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: base64
+                    }
+                  }
+                ]
+              }
+            ]
+          })
+        }
+      );
+      const data = await response.json();
+      const text = data.choices[0].message.content;
       
       // Parse JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
